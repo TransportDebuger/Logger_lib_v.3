@@ -1,0 +1,107 @@
+#--------------------------------------------------------------------------- 
+# Project related configuration options
+#--------------------------------------------------------------------------- 
+PROJECT_NAME           = "Logger3"
+PROJECT_NUMBER         = "3.0.0"
+PROJECT_BRIEF          = "Документация проекта Logger3"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = Russian
+BRIEF_MEMBER_DESC      = YES
+REPEAT_BRIEF           = YES
+ALWAYS_DETAILED_SEC    = NO
+INLINE_INHERITED_MEMB  = NO
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = 
+
+#--------------------------------------------------------------------------- 
+# Build related configuration options
+#--------------------------------------------------------------------------- 
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+GENERATE_DOCSET        = NO
+GENERATE_EXAMPLES      = YES
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the input files
+#--------------------------------------------------------------------------- 
+INPUT                  = include src README.md
+FILE_PATTERNS          = *.h *.hpp *.cpp *.md
+EXAMPLE_PATH           = examples
+EXAMPLE_PATTERNS       = *.cpp *.h
+RECURSIVE              = YES
+EXAMPLE_RECURSIVE      = YES
+EXCLUDE                = docs build
+USE_MDFILE_AS_MAINPAGE   = README.md
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to source browsing
+#--------------------------------------------------------------------------- 
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the alphabetical class index
+#--------------------------------------------------------------------------- 
+GENERATE_TREEVIEW      = YES
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the HTML output
+#--------------------------------------------------------------------------- 
+HTML_TIMESTAMP         = YES
+HTML_DYNAMIC_SECTIONS  = NO
+HTML_COLORSTYLE_HUE    = 200
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the preprocessor
+#--------------------------------------------------------------------------- 
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+EXPAND_ONLY_PREDEF     = NO
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to warnings and progress messages
+#--------------------------------------------------------------------------- 
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the input documentation format
+#--------------------------------------------------------------------------- 
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+SOURCE_BROWSER     = YES
+INLINE_SOURCES     = YES
+GENERATE_TREEVIEW  = YES
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to external references
+#--------------------------------------------------------------------------- 
+TAGFILES               = 
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the dot tool
+#--------------------------------------------------------------------------- 
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 2
+CLASS_DIAGRAMS         = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+UML_LOOK               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+
+#--------------------------------------------------------------------------- 
+# Configuration options related to the search engine   
+#--------------------------------------------------------------------------- 
+SEARCHENGINE           = YES
