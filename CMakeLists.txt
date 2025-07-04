@@ -8,8 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Опции сборки
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-option(BUILD_TESTS "Build tests" ON)
-option(BUILD_EXAMPLES "Build examples" ON)
+option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_DOCS "Build documentation" ON)
 
 # Настройка путей
@@ -21,34 +21,34 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 find_package(Threads REQUIRED)
 
 # Основная библиотека (пока пустая)
-add_library(logger3 INTERFACE)
+file(GLOB_RECURSE LOGGER_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+add_library(logger3 ${LOGGER_SOURCES})
 
-target_include_directories(logger3 INTERFACE
-    #PUBLIC
+target_include_directories(logger3
+    PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-    # PRIVATE
-    #     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(logger3
-    INTERFACE
-    # PUBLIC
+    PUBLIC
         Threads::Threads
 )
 
 # Компилятор-специфичные настройки
 target_compile_options(logger3
-    INTERFACE
-    # PRIVATE
+    PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
 )
 
 # Debug информация
 target_compile_definitions(logger3
-    INTERFACE
-    # PRIVATE
+    PRIVATE
         $<$<CONFIG:Debug>:ADVANCED_LOGGER_DEBUG>
 )
 
