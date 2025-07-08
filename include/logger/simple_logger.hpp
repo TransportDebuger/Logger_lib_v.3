@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
-#include <mutex>
 #include <fstream>
+#include <mutex>
+#include <string>
 
 namespace stc {
 
@@ -41,4 +41,4 @@ private:
     std::ofstream file_stream_;
 };
 
-} // namespace advanced_logger
+}  // namespace stc

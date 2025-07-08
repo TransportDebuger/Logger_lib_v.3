@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "logger/log_level.hpp"
 
 using namespace stc;

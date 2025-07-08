@@ -7,7 +7,7 @@ namespace stc {
 /**
  * @enum LogLevel
  * @brief Уровни важности сообщений логгирования.
- * 
+ *
  * @details Уровни упорядочены по возрастанию важности:
  *          Debug < Info < Warning < Error < Fatal
  */
@@ -23,7 +23,7 @@ enum class LogLevel : int {
  * @brief Преобразование уровня логгирования в строку.
  * @param level Уровень логгирования
  * @return Строковое представление уровня
- * 
+ *
  * @code{.cpp}
  * std::string level_str = logLevelToString(LogLevel::Info);
  * // level_str == "INFO"
@@ -36,7 +36,7 @@ std::string logLevelToString(LogLevel level);
  * @param level_str Строковое представление уровня (регистр не важен)
  * @return Уровень логгирования
  * @throws std::invalid_argument при неизвестном уровне
- * 
+ *
  * @code{.cpp}
  * LogLevel level = stringToLogLevel("info");  // == LogLevel::Info
  * LogLevel level2 = stringToLogLevel("ERROR"); // == LogLevel::Error
@@ -49,7 +49,7 @@ LogLevel stringToLogLevel(const std::string& level_str);
  * @param message_level Уровень сообщения
  * @param min_level Минимальный уровень для записи
  * @return true, если сообщение должно быть записано
- * 
+ *
  * @code{.cpp}
  * bool should_log = shouldLog(LogLevel::Warning, LogLevel::Info);
  * // should_log == true (Warning >= Info)
@@ -57,4 +57,4 @@ LogLevel stringToLogLevel(const std::string& level_str);
  */
 bool shouldLog(LogLevel message_level, LogLevel min_level);
 
-} // namespace stc
+}  // namespace stc

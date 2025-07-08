@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
-#include "logger/simple_logger.hpp"
+
 #include <fstream>
+
+#include "logger/simple_logger.hpp"
 
 using namespace stc;
 
