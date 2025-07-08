@@ -1,12 +1,13 @@
 #pragma once
 
-#include "log_message.hpp"
 #include <string>
+
+#include "log_message.hpp"
 
 namespace stc {
 
 /**
- * @class
+ * @class IFormatter
  * @brief Абстрактный интерфейс для форматирования сообщений логгирования.
  *
  * Определяет контракт для преобразования структурированного сообщения
@@ -30,4 +31,4 @@ public:
     virtual std::string format(const LogMessage& message) = 0;
 };
 
-} // namespace stc
+}  // namespace stc
