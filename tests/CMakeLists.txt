@@ -4,3 +4,6 @@ add_executable(test_simple_logger
 )
 target_link_libraries(test_simple_logger PRIVATE logger3 GTest::gtest_main)
 add_test(NAME SimpleLoggerTest COMMAND test_simple_logger)
+add_executable(test_log_level unit/test_log_level.cpp)
+target_link_libraries(test_log_level PRIVATE logger3 GTest::gtest_main)
+add_test(NAME LogLevelTest COMMAND test_log_level)
