@@ -2,7 +2,7 @@
 #include "logger/simple_logger.hpp"
 #include <fstream>
 
-using namespace stc_logger;
+using namespace stc;
 
 TEST(SimpleLoggerTest, ConsoleLog) {
     SimpleLogger logger;

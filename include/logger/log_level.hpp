@@ -8,8 +8,8 @@ namespace stc {
  * @enum LogLevel
  * @brief Уровни важности сообщений логгирования.
  * 
- * Уровни упорядочены по возрастанию важности:
- * Debug < Info < Warning < Error < Fatal
+ * @details Уровни упорядочены по возрастанию важности:
+ *          Debug < Info < Warning < Error < Fatal
  */
 enum class LogLevel : int {
     Debug = 0,    ///< Отладочная информация
