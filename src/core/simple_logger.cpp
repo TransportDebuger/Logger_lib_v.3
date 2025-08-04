@@ -1,9 +1,9 @@
 #include "logger/simple_logger.hpp"
-
-#include <iostream>
-#include <stdexcept>
-
 #include "logger/log_level.hpp"
+#include "logger/file_output.hpp"
+#include "logger/console_output.hpp"
+#include <stdexcept>
+#include <iostream>
 
 namespace stc {
 
@@ -12,6 +12,7 @@ SimpleLogger::SimpleLogger(std::unique_ptr<IFormatter> formatter)
     if (!formatter_) {
         formatter_ = std::make_unique<StandardFormatter>();
     }
+    addOutput(std::make_unique<ConsoleOutput>());
 }
 
 SimpleLogger::SimpleLogger(const std::string& filename, std::unique_ptr<IFormatter> formatter)
@@ -19,28 +20,17 @@ SimpleLogger::SimpleLogger(const std::string& filename, std::unique_ptr<IFormatt
     if (!formatter_) {
         formatter_ = std::make_unique<StandardFormatter>();
     }
-
     if (!filename.empty()) {
-        file_stream_.open(filename, std::ios::app);
-        if (!file_stream_.is_open()) {
-            throw std::runtime_error("Cannot open log file: " + filename);
-        }
+        addOutput(std::make_unique<FileOutput>(filename));
+    } else {
+        addOutput(std::make_unique<ConsoleOutput>());
     }
 }
 
-SimpleLogger::~SimpleLogger() {
-    if (file_stream_.is_open()) {
-        file_stream_.close();
-    }
-}
-
-// Реализация интерфейса ILogger
+SimpleLogger::~SimpleLogger() = default;
 
 void SimpleLogger::log(LogLevel level, const std::string& message) {
-    if (!isEnabled(level)) {
-        return;
-    }
-
+    if (!isEnabled(level)) return;
     LogMessage log_message(level, message);
     log(log_message);
 }
@@ -56,49 +46,28 @@ LogLevel SimpleLogger::getLevel() const {
 }
 
 bool SimpleLogger::isEnabled(LogLevel level) const {
+    std::lock_guard<std::mutex> lock(mutex_);
     return shouldLog(level, min_level_);
 }
 
-// Работа с LogMessage
-
 void SimpleLogger::log(const LogMessage& log_message) {
-    if (!isEnabled(log_message.level)) {
-        return;
-    }
-
+    if (!isEnabled(log_message.level)) return;
     std::string formatted_message = formatter_->format(log_message);
-    writeToConsole(formatted_message);
-
-    if (file_stream_.is_open()) {
-        writeToFile(formatted_message);
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto& output : outputs_) {
+        output->write(formatted_message);
     }
 }
 
-void SimpleLogger::logToFile(const LogMessage& log_message) {
-    if (!isEnabled(log_message.level)) {
-        return;
-    }
-
-    if (!file_stream_.is_open()) {
-        throw std::runtime_error("Log file is not open");
-    }
-
-    std::string formatted_message = formatter_->format(log_message);
-    writeToFile(formatted_message);
+void SimpleLogger::addOutput(std::unique_ptr<IOutput> output) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    outputs_.push_back(std::move(output));
 }
 
-// Методы для обратной совместимости
-
-void SimpleLogger::log(const std::string& message) {
-    log(LogLevel::Info, message);
+void SimpleLogger::clearOutputs() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    outputs_.clear();
 }
-
-void SimpleLogger::logToFile(const std::string& message) {
-    LogMessage log_message(LogLevel::Info, message);
-    logToFile(log_message);
-}
-
-// Управление форматтером
 
 void SimpleLogger::setFormatter(std::unique_ptr<IFormatter> formatter) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -112,17 +81,4 @@ const IFormatter& SimpleLogger::getFormatter() const {
     return *formatter_;
 }
 
-// Приватные методы
-
-void SimpleLogger::writeToConsole(const std::string& formatted_message) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::cout << formatted_message << std::endl;
-}
-
-void SimpleLogger::writeToFile(const std::string& formatted_message) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    file_stream_ << formatted_message << std::endl;
-    file_stream_.flush();
-}
-
-}  // namespace stc
+} // namespace stc

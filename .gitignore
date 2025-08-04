@@ -39,3 +39,15 @@
 
 # debug information files
 *.dwo
+
+# log files
+*.log
+
+# generated documentation
+docs/html/
+
+# builded project
+build/
+
+# Testing reprots
+Testing/

@@ -1,54 +1,51 @@
 #include <gtest/gtest.h>
-
 #include <fstream>
-#include <regex>
 #include <sstream>
-
-#include "logger/log_message.hpp"
+#include <regex>
 #include "logger/simple_logger.hpp"
+#include "logger/standard_formatter.hpp"
+#include "logger/console_output.hpp"
+#include "logger/file_output.hpp"
 
 using namespace stc;
 
-// Перехватываем вывод в консоль
+// Класс для перехвата cout
 class CoutRedirect {
 public:
     CoutRedirect(std::streambuf* new_buffer) : old(std::cout.rdbuf(new_buffer)) {}
-    ~CoutRedirect() {
-        std::cout.rdbuf(old);
-    }
-
+    ~CoutRedirect() { std::cout.rdbuf(old); }
 private:
     std::streambuf* old;
 };
 
 TEST(SimpleLoggerFormattingTest, ConsoleOutputUsesFormatter) {
-    // Подготовка: форматтер с явно понятным шаблоном
+    // Форматтер с простым шаблоном
     auto fmt = std::make_unique<StandardFormatter>("{level}:{message}");
     SimpleLogger logger(std::move(fmt));
-
-    // Перенаправление cout
+    
     std::stringstream ss;
     CoutRedirect redirect(ss.rdbuf());
-
+    
     logger.log(LogLevel::Warning, "Warn");
-    std::string out = ss.str();
-    EXPECT_NE(out.find("WARNING:Warn"), std::string::npos);
+    
+    std::string output = ss.str();
+    EXPECT_NE(output.find("WARNING:Warn"), std::string::npos);
 }
 
 TEST(SimpleLoggerFormattingTest, FileOutputUsesFormatter) {
     const std::string filename = "test_fmt.log";
-    // Используем шаблон без компонентов для простоты
     auto fmt = std::make_unique<StandardFormatter>("{message}");
     SimpleLogger logger(filename, std::move(fmt));
-
-    // Запись и проверка содержимого файла
+    
     logger.log(LogLevel::Info, "InfoMsg");
-    std::ifstream f(filename);
-    ASSERT_TRUE(f.is_open());
+    
+    std::ifstream file(filename);
+    ASSERT_TRUE(file.is_open());
     std::string line;
-    std::getline(f, line);
+    std::getline(file, line);
     EXPECT_EQ(line, "InfoMsg");
-    f.close();
+    file.close();
+    
     std::remove(filename.c_str());
 }
 
@@ -56,14 +53,44 @@ TEST(SimpleLoggerFormattingTest, LevelFilteringWorks) {
     auto fmt = std::make_unique<StandardFormatter>("{level}");
     SimpleLogger logger(std::move(fmt));
     logger.setLevel(LogLevel::Error);
-
-    // Перехватим cout
+    
     std::stringstream ss;
     CoutRedirect redirect(ss.rdbuf());
-
+    
+    // Info не должно проходить
     logger.info("Ignored");
     EXPECT_TRUE(ss.str().empty());
-
+    
+    // Error должно проходить
     logger.error("Shown");
     EXPECT_NE(ss.str().find("ERROR"), std::string::npos);
+}
+
+TEST(SimpleLoggerFormattingTest, MultipleOutputsWork) {
+    const std::string filename = "test_multiple.log";
+    SimpleLogger logger;
+    logger.clearOutputs();
+    
+    // Добавляем и консольный, и файловый вывод
+    logger.addOutput(std::make_unique<ConsoleOutput>());
+    logger.addOutput(std::make_unique<FileOutput>(filename));
+    
+    std::stringstream ss;
+    CoutRedirect redirect(ss.rdbuf());
+    
+    logger.log(LogLevel::Info, "Multiple outputs test");
+    
+    // Проверяем консольный вывод
+    std::string console_output = ss.str();
+    EXPECT_NE(console_output.find("Multiple outputs test"), std::string::npos);
+    
+    // Проверяем файловый вывод
+    std::ifstream file(filename);
+    ASSERT_TRUE(file.is_open());
+    std::string file_line;
+    std::getline(file, file_line);
+    EXPECT_NE(file_line.find("Multiple outputs test"), std::string::npos);
+    file.close();
+    
+    std::remove(filename.c_str());
 }
