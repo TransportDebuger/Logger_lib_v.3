@@ -20,3 +20,15 @@ add_executable(test_simple_logger_formatting
 )
 target_link_libraries(test_simple_logger_formatting PRIVATE logger3 GTest::gtest_main)
 add_test(NAME SimpleLoggerFormattingTest COMMAND test_simple_logger_formatting)
+
+add_executable(test_level_filter unit/test_level_filter.cpp)
+target_link_libraries(test_level_filter logger3 gtest gtest_main)
+add_test(NAME LevelFilterTest COMMAND test_level_filter)
+
+add_executable(test_component_filter unit/test_component_filter.cpp)
+target_link_libraries(test_component_filter logger3 gtest gtest_main)
+add_test(NAME ComponentFilterTest COMMAND test_component_filter)
+
+add_executable(test_simple_logger_filters unit/test_simple_logger_filters.cpp)
+target_link_libraries(test_simple_logger_filters logger3 gtest gtest_main)
+add_test(NAME SimpleLoggerFiltersTest COMMAND test_simple_logger_filters)
