@@ -7,7 +7,7 @@ namespace stc {
 class BaseLogger : public ILogger {
  public:
   BaseLogger() = default;
-  ~BaseLogger() override = default;
+  virtual ~BaseLogger() noexcept = default;
 
   /**
    * @brief Записать сообщение уровня Debug.

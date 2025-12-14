@@ -1,0 +1,366 @@
+/**
+ * @defgroup Core Базовые компоненты
+ * @brief Фундаментальные компоненты системы логирования Logger_lib v3.
+ *
+ * @details
+ * Группа Core содержит основные классы, интерфейсы и утилиты, которые составляют
+ * ядро библиотеки логирования. Все остальные модули (Formatters, Outputs, Filters)
+ * зависят от компонентов этой группы.
+ *
+ * @section core_hierarchy Иерархия компонентов
+ *
+ * ```
+ *  ┌──────────────────────────────────────────────────┐
+ *  │         SimpleLogger (ILogger реализация)        │
+ *  │  Основной логгер с поддержкой цепочки обработки  │
+ *  └──────────────────────────────────────────────────┘
+ *           ↑           ↑            ↑           ↑
+ *           │           │            │           │
+ *  ┌────────┴─┐  ┌──────┴────┐  ┌───┴──────┐  ┌─┴────────────┐
+ *  │ LogLevel │  │ LogMessage│  │ ILogger  │  │ IFormatter   │
+ *  │ (Enum)   │  │(Структура)│  │(Интерф.) │  │ (Интерф.)    │
+ *  └──────────┘  └───────────┘  └──────────┘  └──────────────┘
+ *        ↓              ↓               ↓            ↓
+ *   ┌──────────────────────────────────────────────────┐
+ *   │        Базовые функции и типы (Core)            │
+ *   │ - Преобразование уровней (LogLevel)             │
+ *   │ - Фильтрация по уровню (shouldLog)              │
+ *   │ - Структурированные сообщения (LogMessage)      │
+ *   │ - Интерфейсы (ILogger, IFormatter)              │
+ *   └──────────────────────────────────────────────────┘
+ * ```
+ *
+ * @section core_components Основные компоненты группы
+ *
+ * | Компонент | Тип | Описание | Файлы |
+ * |-----------|-----|---------|-------|
+ * | **stc::LogLevel** | enum class | Пять уровней логирования (Debug–Fatal) | log_level.hpp, log_level.cpp |
+ * | **stc::logLevelToString()** | функция | Преобразует LogLevel в строку | log_level.hpp, log_level.cpp |
+ * | **stc::stringToLogLevel()** | функция | Парсит строку в LogLevel | log_level.hpp, log_level.cpp |
+ * | **stc::shouldLog()** | функция | Проверяет прохождение фильтра уровня | log_level.hpp, log_level.cpp |
+ * | **stc::LogMessage** | структура | Структурированное сообщение логирования | log_message.hpp |
+ * | **stc::ILogger** | интерфейс | Абстрактный интерфейс логгера | ilogger.hpp |
+ * | **SimpleLogger** | класс | Основная реализация интерфейса ILogger | simple_logger.hpp, simple_logger.cpp |
+ * | **IFormatter** | интерфейс | Интерфейс для форматирования сообщений | iformatter.hpp |
+ * | **IOutput** | интерфейс | Интерфейс для выходных каналов | ioutput.hpp |
+ * | **IFilter** | интерфейс | Интерфейс для фильтрации сообщений | ifilter.hpp |
+ *
+ * @section core_key_concepts Ключевые концепции
+ *
+ * @subsection concept_log_level Иерархия уровней логирования (LogLevel)
+ *
+ * Система использует пять уровней важности сообщений, упорядоченных по возрастанию:
+ *
+ * ```
+ * Debug   (0) ──┐
+ *               ├─ Порядок возрастания критичности
+ * Info    (1) ──┤
+ *               │
+ * Warning (2) ──┤
+ *               │
+ * Error   (3) ──┤
+ *               │
+ * Fatal   (4) ──┘
+ * ```
+ *
+ * **Использование в системах**:
+ * - @ref SimpleLogger использует LogLevel для установки минимального уровня логирования
+ * - @ref LevelFilter фильтрует сообщения по уровню через функцию @ref shouldLog()
+ * - @ref StandardFormatter форматирует уровень в сообщении через @ref logLevelToString()
+ * - Конфигурационные системы парсят уровень из файлов через @ref stringToLogLevel()
+ *
+ * @subsection concept_log_message Структурированные сообщения (LogMessage)
+ *
+ * LogMessage содержит полную информацию о сообщении:
+ * - **level** — уровень логирования (LogLevel)
+ * - **message** — текст сообщения (std::string)
+ * - **component** — модуль/компонент, откуда пришло сообщение (опционально)
+ * - **timestamp** — время логирования (опционально)
+ *
+ * Структурированность позволяет:
+ * - Фильтровать по разным критериям (ComponentFilter, LevelFilter)
+ * - Добавлять метаданные (декораторы)
+ * - Гибко форматировать сообщения (разные форматтеры)
+ * - Маршрутизировать в разные выходы
+ *
+ * @subsection concept_ilogger Интерфейс ILogger
+ *
+ * Определяет минимальный контракт для логгеров:
+ *
+ * ```
+ * class ILogger {
+ * public:
+ *     virtual void log(LogLevel level, const std::string& message) = 0;
+ *     virtual void setLevel(LogLevel min_level) = 0;
+ *     virtual LogLevel getLevel() const = 0;
+ *     virtual bool isEnabled(LogLevel level) const = 0;
+ * };
+ * ```
+ *
+ * @subsection concept_simple_logger SimpleLogger — основная реализация
+ *
+ * SimpleLogger реализует ILogger и добавляет:
+ * - Поддержку множественных выходов (IOutput)
+ * - Систему фильтрации (IFilter, Chain of Responsibility)
+ * - Кастомизируемое форматирование (IFormatter)
+ * - Потокобезопасность (std::mutex)
+ *
+ * Архитектура:
+ * ```
+ * SimpleLogger
+ *     │
+ *     ├─ formatters_    → IFormatter → StandardFormatter
+ *     ├─ outputs_       → IOutput    → ConsoleOutput, FileOutput
+ *     ├─ filters_       → IFilter    → LevelFilter, ComponentFilter
+ *     └─ min_level_     → LogLevel
+ * ```
+ *
+ * @section core_design_patterns Паттерны проектирования
+ *
+ * @subsection pattern_strategy Strategy Pattern
+ *
+ * **Использование**:
+ * - IFormatter позволяет выбирать стратегию форматирования (StandardFormatter, JSONFormatter)
+ * - IOutput позволяет выбирать канал вывода (ConsoleOutput, FileOutput, NetworkOutput)
+ * - IFilter позволяет выбирать критерий фильтрации (LevelFilter, ComponentFilter)
+ *
+ * **Преимущества**:
+ * - Легко добавлять новые стратегии без изменения существующего кода
+ * - Runtime выбор алгоритма через полиморфизм
+ * - Соответствие SOLID принципам (Open/Closed Principle)
+ *
+ * @subsection pattern_chain Chain of Responsibility
+ *
+ * **Использование**: Цепочка фильтров в SimpleLogger
+ * - Каждый фильтр в цепочке может отклонить сообщение
+ * - Сообщение проходит через все фильтры в порядке добавления
+ * - Если хоть один фильтр вернул false, сообщение не логируется
+ *
+ * **Пример**:
+ * ```
+ * Сообщение
+ *     ↓
+ * [LevelFilter] → Warning (2) >= Warning (2) → PASS
+ *     ↓
+ * [ComponentFilter] → "Database" in whitelist → PASS
+ *     ↓
+ * [CustomFilter] → custom_condition → BLOCK
+ *     ↓
+ * Сообщение НЕ логируется
+ * ```
+ *
+ * @subsection pattern_adapter Adapter Pattern
+ *
+ * SimpleLogger адаптирует различные стратегии под единый интерфейс:
+ * - Разные форматтеры (IFormatter) работают единообразно
+ * - Разные выходы (IOutput) работают единообразно
+ * - Разные фильтры (IFilter) работают единообразно
+ *
+ * @section core_thread_safety Потокобезопасность
+ *
+ * **SimpleLogger** защищена std::mutex:
+ * - Все операции с outputs_, filters_, formatter_ синхронизированы
+ * - Сообщение выводится атомарно (без перемешивания из разных потоков)
+ * - Безопасно использовать из нескольких потоков одновременно
+ *
+ * **Пример**:
+ * ```
+ * SimpleLogger logger;
+ *
+ * std::thread t1([&]() { logger.info("From thread 1"); });
+ * std::thread t2([&]() { logger.info("From thread 2"); });
+ *
+ * t1.join();
+ * t2.join();
+ * // Сообщения выведены в правильном порядке, без наложений
+ * ```
+ *
+ * @section core_performance Производительность
+ *
+ * **Сложность операций**:
+ *
+ * | Операция | Сложность | Примечание |
+ * |----------|-----------|-----------|
+ * | log() | O(n) | n = число выходов |
+ * | setLevel() | O(k) | k = число фильтров (обновляет LevelFilter) |
+ * | addOutput() | O(1) | Амортизированное |
+ * | addFilter() | O(1) | Амортизированное |
+ * | shouldLog() | O(m) | m = число фильтров в цепочке |
+ * | logLevelToString() | O(1) | Switch-case |
+ * | stringToLogLevel() | O(1) | Хеш-таблица |
+ *
+ * **Рекомендации**:
+ * - Избегайте дорогостоящих операций в критической секции
+ * - Используйте асинхронное логирование для высоконагруженных систем
+ * - Кэшируйте результаты shouldLog() в циклах
+ * - Фильтруйте на уровне вызова, а не на уровне обработки
+ *
+ * @section core_usage_examples Примеры использования
+ *
+ * @subsection example_basic Базовый пример
+ *
+ * ```
+ * #include "logger/simple_logger.hpp"
+ * using namespace stc;
+ *
+ * int main() {
+ *     SimpleLogger logger;
+ *     logger.setLevel(LogLevel::Info);
+ *
+ *     logger.debug("This won't be logged");
+ *     logger.info("Application started");
+ *     logger.warning("Low memory");
+ *     logger.error("Connection failed");
+ *
+ *     return 0;
+ * }
+ * ```
+ *
+ * @subsection example_advanced Расширенный пример
+ *
+ * ```
+ * #include "logger/simple_logger.hpp"
+ * #include "logger/standard_formatter.hpp"
+ * #include "logger/file_output.hpp"
+ * #include "logger/console_output.hpp"
+ * #include "logger/level_filter.hpp"
+ * #include "logger/component_filter.hpp"
+ * using namespace stc;
+ *
+ * int main() {
+ *     // Создание логгера с форматтером
+ *     auto formatter = std::make_unique<StandardFormatter>("[{level}] {message}");
+ *     SimpleLogger logger;
+ *     logger.setFormatter(std::move(formatter));
+ *
+ *     // Добавление выходов
+ *     logger.addOutput(std::make_unique<ConsoleOutput>());
+ *     logger.addOutput(std::make_unique<FileOutput>("app.log"));
+ *
+ *     // Добавление фильтров
+ *     auto level_filter = std::make_unique<LevelFilter>(LogLevel::Warning);
+ *     logger.addFilter(std::move(level_filter));
+ *
+ *     auto comp_filter = std::make_unique<ComponentFilter>(
+ *         ComponentFilter::Mode::Whitelist
+ *     );
+ *     comp_filter->addComponent("Database");
+ *     comp_filter->addComponent("Network");
+ *     logger.addFilter(std::move(comp_filter));
+ *
+ *     // Логирование
+ *     logger.log({LogLevel::Error, "DB error", "Database"});    // ✓ Выведется
+ *     logger.log({LogLevel::Error, "UI error", "UI"});          // ✗ Отфильтруется
+ *     logger.log({LogLevel::Info, "Message", "Database"});      // ✗ Отфильтруется (низкий уровень)
+ *
+ *     return 0;
+ * }
+ * ```
+ *
+ * @subsection example_config Конфигурирование из файла
+ *
+ * ```
+ * #include "logger/log_level.hpp"
+ * #include "logger/simple_logger.hpp"
+ * #include <fstream>
+ * using namespace stc;
+ *
+ * void loadLoggerConfig(SimpleLogger& logger, const std::string& filename) {
+ *     std::ifstream file(filename);
+ *     std::string line;
+ *
+ *     while (std::getline(file, line)) {
+ *         if (line.find("log_level=") == 0) {
+ *             std::string level_str = line.substr(10);
+ *             try {
+ *                 logger.setLevel(stringToLogLevel(level_str));
+ *             } catch (const std::invalid_argument& e) {
+ *                 logger.error(std::string(e.what()));
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * @section core_best_practices Лучшие практики
+ *
+ * @subsection bp_level_selection Выбор правильного уровня
+ *
+ * | Уровень | Когда использовать | Примеры |
+ * |---------|-------------------|---------|
+ * | **Debug** | Разработка и отладка | Значения переменных, трассировка функций |
+ * | **Info** | Ключевые события | Запуск, подключение к БД, получение запроса |
+ * | **Warning** | Потенциальные проблемы | Потеря соединения, устаревший API |
+ * | **Error** | Сбои операций | Ошибка парсинга, невозможность открыть файл |
+ * | **Fatal** | Критические ошибки | Инициализация не прошла, требуется выход |
+ *
+ * @subsection bp_env_config Конфигурация по средам
+ *
+ * ```
+ * #ifdef DEBUG
+ *     logger.setLevel(LogLevel::Debug);    // Разработка
+ * #elif defined(STAGING)
+ *     logger.setLevel(LogLevel::Warning);  // Staging
+ * #else
+ *     logger.setLevel(LogLevel::Error);    // Production
+ * #endif
+ * ```
+ *
+ * @subsection bp_filtering Правильное использование фильтров
+ *
+ * ```
+ * // ✓ Правильно - цепочка фильтров
+ * auto level_filter = std::make_unique<LevelFilter>(LogLevel::Warning);
+ * auto comp_filter = std::make_unique<ComponentFilter>(ComponentFilter::Mode::Whitelist);
+ * comp_filter->addComponent("Database");
+ * logger.addFilter(std::move(level_filter));
+ * logger.addFilter(std::move(comp_filter));
+ * // Сообщение пройдёт только если оба фильтра пропустят его
+ *
+ * // ✗ Неправильно - дублирование
+ * logger.addFilter(std::make_unique<LevelFilter>(LogLevel::Warning));
+ * logger.addFilter(std::make_unique<LevelFilter>(LogLevel::Error));
+ * // Два LevelFilter будут противоречить друг другу
+ * ```
+ *
+ * @subsection bp_performance Оптимизация производительности
+ *
+ * ```
+ * // ❌ Неправильно - дорогостоящее форматирование выполняется всегда
+ * logger.debug("Items: " + formatLargeVector(items));
+ *
+ * // ✅ Правильно - форматирование только если Debug включён
+ * if (shouldLog(LogLevel::Debug, logger.getLevel())) {
+ *     logger.debug("Items: " + formatLargeVector(items));
+ * }
+ *
+ * // ✅ Правильно - использовать isEnabled()
+ * if (logger.isEnabled(LogLevel::Debug)) {
+ *     logger.debug("Items: " + formatLargeVector(items));
+ * }
+ * ```
+ *
+ * @section core_limitations Ограничения и известные проблемы
+ *
+ * - SimpleLogger хранит все фильтры в памяти (нет персистентности)
+ * - Форматирование поддерживает только базовые шаблоны (сложные шаблоны планируются в v4)
+ * - Нет встроенного ротирования файлов (требуется пользовательская реализация FileOutput)
+ * - Синхронное логирование может быть узким местом в высоконагруженных приложениях
+ *
+ * @section core_related Связанные модули
+ *
+ * - @ref Formatters — кастомное форматирование сообщений
+ * - @ref Outputs — различные каналы вывода
+ * - @ref Filters — фильтрация сообщений по разным критериям
+ * - @ref Config (планируется) — загрузка конфигурации из файлов
+ * - @ref Async (планируется) — асинхронное логирование
+ *
+ * @section core_version История версий
+ *
+ * | Версия | Дата | Описание |
+ * |--------|------|---------|
+ * | 1.0 | 2025-12-01 | Базовая реализация LogLevel и SimpleLogger |
+ * | 1.1 | 2025-12-05 | Добавлена система выходов (IOutput) |
+ * | 1.2 | 2025-12-13 | Добавлена система фильтрации (IFilter), полная документация |
+ * 
+ */
