@@ -1,3 +1,13 @@
+/**
+ * @file log_level.hpp
+ * @author Artem Ulyanov (https://github.com/TransportDebuger)
+ * @date 2025-12-13
+ * @version 1.2
+ *
+ * @brief Определяет уровни логирования и вспомогательные функции для их
+ * преобразования и фильтрации.
+ */
+
 #pragma once
 
 #include <string>
@@ -5,55 +15,61 @@
 namespace stc {
 
 /**
+ * @ingroup Core
  * @enum LogLevel
- * @brief Уровни важности сообщений логгирования.
- *
- * @details Уровни упорядочены по возрастанию важности:
- *          Debug < Info < Warning < Error < Fatal
+ * @brief Уровни важности сообщений логирования.
  */
 enum class LogLevel : int {
-    Debug = 0,    ///< Отладочная информация
-    Info = 1,     ///< Информационные сообщения
-    Warning = 2,  ///< Предупреждения
-    Error = 3,    ///< Ошибки
-    Fatal = 4     ///< Критические ошибки
+  Debug = 0,  ///< Детальные отладочные сообщения (наиболее низкий приоритет)
+  Info = 1,  ///< Информационные события, отражающие ход работы системы
+  Warning = 2,  ///< Предупреждения: непредусмотренные, но не критичные ситуации
+  Error = 3,  ///< Ошибки: сбой операции, но работа приложения продолжается
+  Fatal = 4  ///< Критические ошибки: возможно, аварийное завершение (наиболее
+             ///< высокий приоритет)
 };
 
 /**
- * @brief Преобразование уровня логгирования в строку.
- * @param level Уровень логгирования
- * @return Строковое представление уровня
+ * @ingroup Core
+ * @brief Преобразует уровень логирования в строковое представление.
  *
- * @code{.cpp}
- * std::string level_str = logLevelToString(LogLevel::Info);
- * // level_str == "INFO"
- * @endcode
+ * @param level Значение типа @ref stc::LogLevel
+ *
+ * @return Строковое представление уровня: "DEBUG", "INFO", "WARNING", "ERROR",
+ * "FATAL". Для неизвестных значений возвращается "UNKNOWN".
+ *
+ * @exception noexcept Гарантированно не выбрасывает исключения.
+ *
+ * @note Всегда возвращает строку в верхнем регистре.
  */
 std::string logLevelToString(LogLevel level);
 
 /**
- * @brief Преобразование строки в уровень логгирования.
- * @param level_str Строковое представление уровня (регистр не важен)
- * @return Уровень логгирования
- * @throws std::invalid_argument при неизвестном уровне
+ * @ingroup Core
+ * @brief  Преобразует строку в уровень логирования (регистронезависимо).
  *
- * @code{.cpp}
- * LogLevel level = stringToLogLevel("info");  // == LogLevel::Info
- * LogLevel level2 = stringToLogLevel("ERROR"); // == LogLevel::Error
- * @endcode
+ * @param level_str Строковое представление уровня: "debug", "INFO", "warn" и
+ * т.п. Регистр символов игнорируется.
+ *
+ * @return Соответствующее значение типа `stc::LogLevel`.
+ *
+ * @exception std::invalid_argument Если строка не соответствует ни одному
+ *                                  поддерживаемому уровню или синониму.
+ *                                  Сообщение: "Unknown log level: {level_str}".
+ * @ingroup Core
+ * @warning Пробелы в начале/конце не обрезаются — должны быть обработаны
+ * заранее в вызывающем коде.
  */
 LogLevel stringToLogLevel(const std::string& level_str);
 
 /**
- * @brief Проверка, должно ли сообщение быть записано.
- * @param message_level Уровень сообщения
- * @param min_level Минимальный уровень для записи
- * @return true, если сообщение должно быть записано
+ * @brief Проверяет, должно ли сообщение быть залогировано.
  *
- * @code{.cpp}
- * bool should_log = shouldLog(LogLevel::Warning, LogLevel::Info);
- * // should_log == true (Warning >= Info)
- * @endcode
+ * @param message_level Уровень логируемого сообщения.
+ * @param min_level     Минимальный уровень логгируемых сообщений.
+ * @return true, если `message_level >= min_level`, иначе false.
+ *
+ * @exception noexcept Гарантирует отсутствие исключений и побочных эффектов.
+ * @ingroup Core
  */
 bool shouldLog(LogLevel message_level, LogLevel min_level);
 
