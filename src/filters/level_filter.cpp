@@ -1,21 +1,11 @@
-#include "logger/level_filter.hpp"
+#include "stc/logger/filters/level_filter.hpp"
 
-namespace stc {
+namespace stc::logger {
 
-LevelFilter::LevelFilter(LogLevel min_level) 
-    : min_level_(min_level) {
+bool LevelFilter::ShouldPass(const LogRecord& record) const {
+  // Сравнение enum class работает напрямую, так как уровни
+  // упорядочены по возрастанию критичности (Trace=0 ... Critical=5).
+  return record.level >= min_level_;
 }
 
-bool LevelFilter::shouldPass(const LogMessage& message) const {
-    return shouldLog(message.level, min_level_);
-}
-
-LogLevel LevelFilter::getMinLevel() const {
-    return min_level_;
-}
-
-void LevelFilter::setMinLevel(LogLevel min_level) {
-    min_level_ = min_level;
-}
-
-} // namespace stc
+}  // namespace stc::logger
